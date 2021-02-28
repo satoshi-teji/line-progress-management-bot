@@ -11,15 +11,18 @@ from linebot.exceptions import (
 from linebot.models import (
     MessageEvent,
     FollowEvent,
+    PostbackEvent,
     TextMessage,
     TextSendMessage,
     ImageSendMessage,
     TemplateSendMessage,
     ConfirmTemplate,
-    PostbackAction
+    PostbackAction,
+    DatetimePickerTemplateAction
 )
 
 import os
+import datetime
 
 app = Flask(__name__)
 
@@ -28,6 +31,12 @@ CHANNEL_SECRET = os.environ["CHANNEL_SECRET"]
 
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
+
+
+def get_user_data(event):
+    return (event.source.user_id,
+            event.reply_token,
+            line_bot_api.get_profile(event.source.user_id).display_name)
 
 
 @app.route("/callback", methods=["POST"])
@@ -44,12 +53,11 @@ def callback():
     return "OK"
 
 
+# メッセージが送られた時のイベント
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    reply_token = event.reply_token
+    user_id, reply_token, user_name = get_user_data(event)
     user_msg = event.message.text
-    user_id = event.source.user_id
-    user_name = line_bot_api.get_profile(user_id).display_name
 
     line_bot_api.reply_message(
         reply_token,
@@ -59,6 +67,7 @@ def handle_message(event):
     )
 
 
+# 友達追加時のイベント
 @handler.add(FollowEvent)
 def handle_follow_message(event):
     user_id = event.source.user_id
@@ -81,10 +90,46 @@ def handle_follow_message(event):
                                             label="No",
                                             display_text="いいえ",
                                             data="action=no"
-                                        )
-                                    ]
-        ))]
+                                        )]
+                                    )
+                                )]
     )
+
+
+# POSTBACK時のイベント
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    user_id, reply_token, user_name = get_user_data(event)
+    data = event.postback.data
+
+    if (data == "yes_first"):
+        # 確実に日本時間での時間を取得する
+        initial_day = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+        limit = initial_day + datetime.timedelta(days=90)
+        date_picker = TemplateSendMessage(
+            alt_text="終了予定日を設定",
+            title="終了予定日",
+            actions=[
+                DatetimePickerTemplateAction(
+                    label="end_day",
+                    data="action=set_end_day",
+                    mode="date",
+                    initial=initial_day+datetime.timedelta(days=30),
+                    min=initial_day,
+                    max=limit
+                )
+            ]
+        )
+        line_bot_api.reply_message(
+            reply_token,
+            [TextSendMessage(text="利用を開始します。期限を選択してください。(最大90日先まで選択可能)"),
+                date_picker]
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=str(data))
+        )
 
 
 if __name__ == "__main__":
