@@ -41,11 +41,8 @@ def callback():
 def handle_message(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=line_bot_api.get_profile(event.source.user_id).display_name)
-    )
-    line_bot_api.reply_message(
-        event.reply_token,
-        ImageSendMessage(original_content_url="https://placehold.jp/150x150.png", preview_image_url="https://placehold.jp/150x150.png")
+        [TextSendMessage(text=line_bot_api.get_profile(event.source.user_id).display_name),
+        ImageSendMessage(original_content_url="https://placehold.jp/150x150.png", preview_image_url="https://placehold.jp/150x150.png")]
     )
 
 
