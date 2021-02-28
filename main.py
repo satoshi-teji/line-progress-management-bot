@@ -68,6 +68,7 @@ def callback():
 def handle_message(event):
     user_id, reply_token, user_name = get_user_data(event)
     user_msg = event.message.text
+    global pre_action
 
     if (pre_action == "set_end_day"):
         num = float(re.findall('\d+\.\d+', user_msg)[0])
@@ -78,7 +79,6 @@ def handle_message(event):
                     text="最終目標を {}に設定しました。\n一日あたりの目標を設定します。一日あたりの目標をメッセージで送信してください。\n自動で設定したい場合は0を送信してください。".format(num)
                 )]
         )
-        global pre_action
         pre_action = "target"
         return
     elif (pre_action == "target"):
@@ -110,7 +110,6 @@ def handle_message(event):
                                     )
             ]
         )
-        global pre_action
         pre_action = "per_day"
         return
 
@@ -184,6 +183,7 @@ def handle_postback(event):
     user_id, reply_token, user_name = get_user_data(event)
     data = urllib.parse.parse_qs(event.postback.data)
     action = data["action"][0]
+    global pre_action
 
     if (action == "yes_first"):
         # 確実に日本時間での時間を取得する
@@ -223,8 +223,7 @@ def handle_postback(event):
                     text="期限を{}に設定しました。\n最終目標を設定します。最終目標をメッセージで送信してください。(整数で送信してください。)".format(end_date)
                 )]
         )
-        global pre_action
-        pre_action = "target"
+        pre_action = action
     elif (action == "nortification"):
         line_bot_api.reply_message(
             reply_token,
