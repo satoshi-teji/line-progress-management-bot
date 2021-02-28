@@ -41,7 +41,7 @@ def callback():
 def handle_message(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=str(line_bot_api.get_profile(event.source)))
+        TextSendMessage(text=str(event))
     )
 
 
