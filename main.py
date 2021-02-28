@@ -9,7 +9,7 @@ from linebot.exceptions import (
 )
 
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage
+    MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
 )
 
 import os
@@ -41,7 +41,11 @@ def callback():
 def handle_message(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=str(event))
+        TextSendMessage(text= line_bot_api.get_profile(event.source["userId"]).display_name)
+    )
+    line_bot_api.reply_message(
+        event.reply_token,
+        ImageSendMessage(original_content_url="https://placehold.jp/150x150.png", preview_image_url="https://placehold.jp/150x150.png")
     )
 
 
