@@ -71,7 +71,16 @@ def handle_message(event):
     global pre_action
 
     if (pre_action == "set_end_day"):
-        num = float(re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)[0])
+        nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
+        if (len(nums) == 0):
+            line_bot_api.reply_message(
+                reply_token,
+                [
+                    TextSendMessage(
+                        text="数値を入力してください。設定を中止する場合は「設定中止」とメッセージを送信してください。"
+                    )]
+            )
+        num = float(nums[0])
         line_bot_api.reply_message(
             reply_token,
             [
@@ -82,7 +91,16 @@ def handle_message(event):
         pre_action = "target"
         return
     elif (pre_action == "target"):
-        num = float(re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)[0])
+        nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
+        if (len(nums) == 0):
+            line_bot_api.reply_message(
+                reply_token,
+                [
+                    TextSendMessage(
+                        text="数値を入力してください。設定を中止する場合は「設定中止」とメッセージを送信してください。"
+                    )]
+            )
+        num = float(nums[0])
         line_bot_api.reply_message(
             reply_token,
             [
@@ -112,6 +130,16 @@ def handle_message(event):
         )
         pre_action = "per_day"
         return
+
+    if ("設定" in user_msg and "中止" in user_msg):
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="設定を中止しました。"
+                )]
+        )
+        pre_action = ""
 
     if ("利用" in user_msg and "開始" in user_msg):
         line_bot_api.reply_message(
@@ -229,7 +257,7 @@ def handle_postback(event):
             reply_token,
             [
                 TextSendMessage(
-                    text="通知設定をオンにしました。"
+                    text="通知設定をオンにしました。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
                 )
             ]
         )
@@ -238,11 +266,10 @@ def handle_postback(event):
             reply_token,
             [
                 TextSendMessage(
-                    text="通知設定はオフです。「進捗状況」とメッセージを送信することでグラフはいつでも受信可能です。"
+                    text="通知設定はオフです。\n「進捗状況」とメッセージを送信することでグラフはいつでも受信可能です。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
                 )
             ]
         )
-
     else:
         line_bot_api.reply_message(
             reply_token,
