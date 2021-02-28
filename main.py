@@ -117,6 +117,7 @@ def handle_postback(event):
             alt_text="終了予定日を設定",
             template=ButtonsTemplate(
                 title="終了予定日",
+                text="終了予定日を設定します。",
                 actions=[
                     DatetimePickerTemplateAction(
                         label="end_day",
