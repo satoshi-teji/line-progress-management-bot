@@ -71,7 +71,7 @@ def handle_message(event):
     global pre_action
 
     if (pre_action == "set_end_day"):
-        num = float(re.findall('\d+\.\d+', user_msg)[0])
+        num = float(re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)[0])
         line_bot_api.reply_message(
             reply_token,
             [
@@ -82,7 +82,7 @@ def handle_message(event):
         pre_action = "target"
         return
     elif (pre_action == "target"):
-        num = float(re.findall('\d+\.\d+', user_msg)[0])
+        num = float(re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)[0])
         line_bot_api.reply_message(
             reply_token,
             [
@@ -210,7 +210,7 @@ def handle_postback(event):
         line_bot_api.reply_message(
             reply_token,
             [
-                TextSendMessage(text="利用を開始します。期限を選択してください。(最大90日先まで選択可能)"),
+                TextSendMessage(text="期限を選択してください。(最大90日先まで選択可能)"),
                 date_picker
             ]
         )
