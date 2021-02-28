@@ -34,6 +34,7 @@ CHANNEL_SECRET = os.environ["CHANNEL_SECRET"]
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
+pre_action = None
 
 def get_user_data(event):
     return (event.source.user_id,
@@ -120,7 +121,7 @@ def handle_postback(event):
                 text="終了予定日を設定します。",
                 actions=[
                     DatetimePickerTemplateAction(
-                        label="end_day",
+                        label="日付を選択",
                         data="action=set_end_day",
                         mode="date",
                         initial=get_date(
@@ -135,6 +136,12 @@ def handle_postback(event):
             reply_token,
             [TextSendMessage(text="利用を開始します。期限を選択してください。(最大90日先まで選択可能)"),
                 date_picker]
+        )
+    elif (action == "set_end_day"):
+        end_date = event.postback.params
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=str(end_date))
         )
     else:
         line_bot_api.reply_message(
