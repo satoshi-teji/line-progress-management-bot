@@ -23,6 +23,7 @@ from linebot.models import (
 
 import os
 import datetime
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -100,9 +101,10 @@ def handle_follow_message(event):
 @handler.add(PostbackEvent)
 def handle_postback(event):
     user_id, reply_token, user_name = get_user_data(event)
-    data = event.postback.data
+    data = urllib.parse.parse_qs(event.postback.data)
+    action = data["action"][0]
 
-    if (data == "yes_first"):
+    if (action == "yes_first"):
         # 確実に日本時間での時間を取得する
         initial_day = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
         limit = initial_day + datetime.timedelta(days=90)
