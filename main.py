@@ -40,6 +40,10 @@ def get_user_data(event):
             line_bot_api.get_profile(event.source.user_id).display_name)
 
 
+def get_date(datetime_data):
+    return "{:04}-{:02}-{:02}".format(datetime_data.year, datetime_data.month, datetime_data.day)
+
+
 @app.route("/callback", methods=["POST"])
 def callback():
     signature = request.headers['X-Line-Signature']
@@ -116,9 +120,9 @@ def handle_postback(event):
                     label="end_day",
                     data="action=set_end_day",
                     mode="date",
-                    initial=initial_day+datetime.timedelta(days=30),
-                    min=initial_day,
-                    max=limit
+                    initial=get_date(initial_day+datetime.timedelta(days=30)),
+                    min=get_date(initial_day),
+                    max=get_date(limit)
                 )
             ]
         )
