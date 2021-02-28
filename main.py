@@ -17,6 +17,7 @@ from linebot.models import (
     ImageSendMessage,
     TemplateSendMessage,
     ConfirmTemplate,
+    ButtonsTemplate,
     PostbackAction,
     DatetimePickerTemplateAction
 )
@@ -114,17 +115,20 @@ def handle_postback(event):
         limit = initial_day + datetime.timedelta(days=90)
         date_picker = TemplateSendMessage(
             alt_text="終了予定日を設定",
-            title="終了予定日",
-            actions=[
-                DatetimePickerTemplateAction(
-                    label="end_day",
-                    data="action=set_end_day",
-                    mode="date",
-                    initial=get_date(initial_day+datetime.timedelta(days=30)),
-                    min=get_date(initial_day),
-                    max=get_date(limit)
-                )
-            ]
+            template=ButtonsTemplate(
+                title="終了予定日",
+                actions=[
+                    DatetimePickerTemplateAction(
+                        label="end_day",
+                        data="action=set_end_day",
+                        mode="date",
+                        initial=get_date(
+                            initial_day+datetime.timedelta(days=30)
+                            ),
+                        min=get_date(initial_day),
+                        max=get_date(limit)
+                    )
+                ])
         )
         line_bot_api.reply_message(
             reply_token,
