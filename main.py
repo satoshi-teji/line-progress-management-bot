@@ -22,6 +22,7 @@ from linebot.models import (
     DatetimePickerTemplateAction
 )
 
+import re
 import os
 import datetime
 import urllib.parse
@@ -34,7 +35,8 @@ CHANNEL_SECRET = os.environ["CHANNEL_SECRET"]
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-pre_action = None
+pre_action = ""
+
 
 def get_user_data(event):
     return (event.source.user_id,
@@ -43,7 +45,8 @@ def get_user_data(event):
 
 
 def get_date(datetime_data):
-    return "{:04}-{:02}-{:02}".format(datetime_data.year, datetime_data.month, datetime_data.day)
+    return "{:04}-{:02}-{:02}".format(
+        datetime_data.year, datetime_data.month, datetime_data.day)
 
 
 @app.route("/callback", methods=["POST"])
@@ -66,12 +69,83 @@ def handle_message(event):
     user_id, reply_token, user_name = get_user_data(event)
     user_msg = event.message.text
 
-    line_bot_api.reply_message(
-        reply_token,
-        [TextSendMessage(
-            text="{}さん\n{}".format(user_name, user_msg)
-            )]
-    )
+    if (pre_action == "set_end_day"):
+        num = float(re.findall('\d+\.\d+', user_msg)[0])
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="最終目標を {}に設定しました。\n一日あたりの目標を設定します。一日あたりの目標をメッセージで送信してください。\n自動で設定したい場合は0を送信してください。".format(num)
+                )]
+        )
+        global pre_action
+        pre_action = "target"
+        return
+    elif (pre_action == "target"):
+        num = float(re.findall('\d+\.\d+', user_msg)[0])
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="一日あたりの目標を {}に設定しました。\n以下の設定で利用を開始します。".format(num)
+                ),
+                TextSendMessage(
+                    text="期間: {} ~ {}\n最終目標: {}\n一日あたり: {}".format('a', 'b', 1, 2)
+                ),
+                TemplateSendMessage(alt_text="毎日21時に進捗状況グラフを送りますか?",
+                                    template=ConfirmTemplate(
+                                        text="毎日21時に進捗状況グラフを送りますか?\n設定してもしなくても「進捗状況」とメッセージを送信することで任意の時間に受信が可能です。",
+                                        actions=[
+                                            PostbackAction(
+                                                label="Yes",
+                                                display_text="はい",
+                                                data="action=nortification"
+                                            ),
+                                            PostbackAction(
+                                                label="No",
+                                                display_text="いいえ",
+                                                data="action=no_nortification"
+                                            )]
+                                        )
+                                    )
+            ]
+        )
+        global pre_action
+        pre_action = "per_day"
+        return
+
+    if ("利用" in user_msg and "開始" in user_msg):
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="こんにちは、{}さん！\n進捗管理くんをご利用いただきありがとうございます。".format(user_name)
+                    ),
+                TemplateSendMessage(alt_text="利用を開始しますか?",
+                                    template=ConfirmTemplate(
+                                        text="利用を開始しますか?",
+                                        actions=[
+                                            PostbackAction(
+                                                label="Yes",
+                                                display_text="はい",
+                                                data="action=yes_first"
+                                            ),
+                                            PostbackAction(
+                                                label="No",
+                                                display_text="いいえ",
+                                                data="action=no"
+                                            )]
+                                        )
+                                    )]
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="「利用開始」とメッセージを送信することで初期設定を行います。\n必要なくなった場合はブロックしてください。ブロックを解除することで利用を再開できます。"
+                )]
+        )
 
 
 # 友達追加時のイベント
@@ -83,8 +157,9 @@ def handle_follow_message(event):
 
     line_bot_api.reply_message(
         reply_token,
-        [TextSendMessage(text="こんにちは、{}さん！\n進捗管理くんをご利用いただきありがとうございます。".format(user_name)),
-            TemplateSendMessage(alt_text="現在非対応のデバイスです。iOS版またはAndroid版のLINEをご使用ください。",
+        [
+            TextSendMessage(text="こんにちは、{}さん！\n進捗管理くんをご利用いただきありがとうございます。".format(user_name)),
+            TemplateSendMessage(alt_text="利用を開始しますか?",
                                 template=ConfirmTemplate(
                                     text="利用を開始しますか?",
                                     actions=[
@@ -134,19 +209,45 @@ def handle_postback(event):
         )
         line_bot_api.reply_message(
             reply_token,
-            [TextSendMessage(text="利用を開始します。期限を選択してください。(最大90日先まで選択可能)"),
-                date_picker]
+            [
+                TextSendMessage(text="利用を開始します。期限を選択してください。(最大90日先まで選択可能)"),
+                date_picker
+            ]
         )
     elif (action == "set_end_day"):
-        end_date = event.postback.params
+        end_date = event.postback.params['date']
         line_bot_api.reply_message(
             reply_token,
-            TextSendMessage(text=str(end_date))
+            [
+                TextSendMessage(
+                    text="期限を{}に設定しました。\n最終目標を設定します。最終目標をメッセージで送信してください。(整数で送信してください。)".format(end_date)
+                )]
         )
+        global pre_action
+        pre_action = "target"
+    elif (action == "nortification"):
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="通知設定をオンにしました。"
+                )
+            ]
+        )
+    elif (action == "no_nortification"):
+        line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="通知設定はオフです。「進捗状況」とメッセージを送信することでグラフはいつでも受信可能です。"
+                )
+            ]
+        )
+
     else:
         line_bot_api.reply_message(
             reply_token,
-            TextSendMessage(text=str(data))
+            TextSendMessage(text="設定を中止します。")
         )
 
 
