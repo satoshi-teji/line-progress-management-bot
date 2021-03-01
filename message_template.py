@@ -17,6 +17,21 @@ def get_date(datetime_data):
         datetime_data.year, datetime_data.month, datetime_data.day)
 
 
+def help_message(line_bot_api, reply_token):
+    line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="現在進捗管理を行っています。\n\
+                        設定がみたい場合は「設定」と送信してください。\n\
+                        利用を中止する場合は「利用中止」と送信してください。\n\
+                        「進捗 3回」のように送信することで今日の進捗を更新します。\n\
+                        進捗をグラフでみたい場合は「グラフ」と送信してください。"
+                )]
+    )
+    return
+
+
 def start_message(line_bot_api, reply_token, user_name):
     line_bot_api.reply_message(
         reply_token,
@@ -73,6 +88,25 @@ def stop_setting_message(line_bot_api, reply_token):
                 TextSendMessage(
                     text="設定を中止しました。"
                 )]
+    )
+    return
+
+
+def setting_message(
+        line_bot_api,
+        reply_token,
+        initial_date,
+        end_date,
+        target,
+        per_day):
+    line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="設定はこのようになっています。\n\
+                        期間: {} ~ {}\n最終目標: {}\n一日あたり: {}".format(
+                        initial_date, end_date, target, per_day))
+            ]
     )
     return
 
