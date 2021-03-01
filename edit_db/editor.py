@@ -62,7 +62,7 @@ class Editor():
         conn = sqlite3.connect(self.dbname)
         cur = conn.cursor()
         cur.execute('SELECT target FROM progress_data WHERE user_id="{}"'.format(user_id))
-        if (cur.fetchone() is None):
+        if (cur.fetchone()[0] == -1):
             conn.commit()
             conn.close()
             return False
@@ -74,7 +74,7 @@ class Editor():
         conn = sqlite3.connect(self.dbname)
         cur = conn.cursor()
         cur.execute('SELECT per_day_target FROM progress_data WHERE user_id="{}"'.format(user_id))
-        if (cur.fetchone() is None):
+        if (cur.fetchone()[0] == -1):
             conn.commit()
             conn.close()
             return False
