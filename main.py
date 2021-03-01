@@ -12,20 +12,17 @@ from linebot.models import (
     MessageEvent,
     FollowEvent,
     PostbackEvent,
-    TextMessage,
-    TextSendMessage,
-    ImageSendMessage,
-    TemplateSendMessage,
-    ConfirmTemplate,
-    ButtonsTemplate,
-    PostbackAction,
-    DatetimePickerTemplateAction
+    UnfollowEvent,
+    TextMessage
 )
 
+import message_template as mt
 import re
 import os
-import datetime
 import urllib.parse
+import datetime
+import edit_db as ed
+
 
 app = Flask(__name__)
 
@@ -34,19 +31,19 @@ CHANNEL_SECRET = os.environ["CHANNEL_SECRET"]
 
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
+dbname = 'db/user_data.db'
+db_editor = ed.Editor(dbname)
 
-pre_action = ""
+
+def get_date(datetime_data):
+    return "{:04}-{:02}-{:02}".format(
+        datetime_data.year, datetime_data.month, datetime_data.day)
 
 
 def get_user_data(event):
     return (event.source.user_id,
             event.reply_token,
             line_bot_api.get_profile(event.source.user_id).display_name)
-
-
-def get_date(datetime_data):
-    return "{:04}-{:02}-{:02}".format(
-        datetime_data.year, datetime_data.month, datetime_data.day)
 
 
 @app.route("/callback", methods=["POST"])
@@ -68,111 +65,43 @@ def callback():
 def handle_message(event):
     user_id, reply_token, user_name = get_user_data(event)
     user_msg = event.message.text
-    global pre_action
 
-    if (pre_action == "set_end_day"):
+    if (not db_editor.check_user(user_id)):
+        if ("利用" in user_msg and "開始" in user_msg):
+            mt.start_message(line_bot_api, reply_token, user_name)
+            return
+        else:
+            mt.invalid_message(line_bot_api, reply_token)
+            return
+
+    if (not db_editor.check_target(user_id)):
+        # DBに最終目標がない
         nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
         if (len(nums) == 0):
-            line_bot_api.reply_message(
-                reply_token,
-                [
-                    TextSendMessage(
-                        text="数値を入力してください。設定を中止する場合は「設定中止」とメッセージを送信してください。"
-                    )]
-            )
+            mt.num_error_message(line_bot_api, reply_token)
+            return
         num = float(nums[0])
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="最終目標を {}に設定しました。\n一日あたりの目標を設定します。一日あたりの目標をメッセージで送信してください。\n自動で設定したい場合は0を送信してください。".format(num)
-                )]
-        )
-        pre_action = "target"
+        mt.set_per_day_target_message(line_bot_api, reply_token, num)
+        db_editor.set_target(user_id, num)
         return
-    elif (pre_action == "target"):
+    elif (not db_editor.check_per_day_target(user_id)):
+        # DBに一日あたりの目標がない
         nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
         if (len(nums) == 0):
-            line_bot_api.reply_message(
-                reply_token,
-                [
-                    TextSendMessage(
-                        text="数値を入力してください。設定を中止する場合は「設定中止」とメッセージを送信してください。"
-                    )]
-            )
+            mt.num_error_message(line_bot_api, reply_token)
+            return
         num = float(nums[0])
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="一日あたりの目標を {}に設定しました。\n以下の設定で利用を開始します。".format(num)
-                ),
-                TextSendMessage(
-                    text="期間: {} ~ {}\n最終目標: {}\n一日あたり: {}".format('a', 'b', 1, 2)
-                ),
-                TemplateSendMessage(alt_text="毎日21時に進捗状況グラフを送りますか?",
-                                    template=ConfirmTemplate(
-                                        text="毎日21時に進捗状況グラフを送りますか?\n設定してもしなくても「進捗状況」とメッセージを送信することで任意の時間に受信が可能です。",
-                                        actions=[
-                                            PostbackAction(
-                                                label="Yes",
-                                                display_text="はい",
-                                                data="action=nortification"
-                                            ),
-                                            PostbackAction(
-                                                label="No",
-                                                display_text="いいえ",
-                                                data="action=no_nortification"
-                                            )]
-                                        )
-                                    )
-            ]
-        )
-        pre_action = "per_day"
+        db_editor.set_per_day_target(user_id, num)
+        _, _, initial_date, end_date, target, per_day_target = db_editor.get_data(user_id)
+        mt.set_notification_message(line_bot_api, reply_token, num,
+                                    initial_date, end_date, target,
+                                    per_day_target)
         return
 
-    if ("設定" in user_msg and "中止" in user_msg):
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="設定を中止しました。"
-                )]
-        )
-        pre_action = ""
-
-    if ("利用" in user_msg and "開始" in user_msg):
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="こんにちは、{}さん！\n進捗管理くんをご利用いただきありがとうございます。".format(user_name)
-                    ),
-                TemplateSendMessage(alt_text="利用を開始しますか?",
-                                    template=ConfirmTemplate(
-                                        text="利用を開始しますか?",
-                                        actions=[
-                                            PostbackAction(
-                                                label="Yes",
-                                                display_text="はい",
-                                                data="action=yes_first"
-                                            ),
-                                            PostbackAction(
-                                                label="No",
-                                                display_text="いいえ",
-                                                data="action=no"
-                                            )]
-                                        )
-                                    )]
-        )
-    else:
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="「利用開始」とメッセージを送信することで初期設定を行います。\n必要なくなった場合はブロックしてください。ブロックを解除することで利用を再開できます。"
-                )]
-        )
+    if ("利用" in user_msg and "中止" in user_msg):
+        mt.stop_using_message(line_bot_api, reply_token)
+        db_editor.del_user(user_id)
+        return
 
 
 # 友達追加時のイベント
@@ -182,28 +111,13 @@ def handle_follow_message(event):
     reply_token = event.reply_token
     user_name = line_bot_api.get_profile(user_id).display_name
 
-    line_bot_api.reply_message(
-        reply_token,
-        [
-            TextSendMessage(text="こんにちは、{}さん！\n進捗管理くんをご利用いただきありがとうございます。".format(user_name)),
-            TemplateSendMessage(alt_text="利用を開始しますか?",
-                                template=ConfirmTemplate(
-                                    text="利用を開始しますか?",
-                                    actions=[
-                                        PostbackAction(
-                                            label="Yes",
-                                            display_text="はい",
-                                            data="action=yes_first"
-                                        ),
-                                        PostbackAction(
-                                            label="No",
-                                            display_text="いいえ",
-                                            data="action=no"
-                                        )]
-                                    )
-                                )]
-    )
+    mt.start_message(line_bot_api, reply_token, user_name)
 
+
+@handler.add(UnfollowEvent)
+def handle_unfollow_message(event):
+    user_id = event.source.user_id
+    db_editor.del_user(user_id)
 
 # POSTBACK時のイベント
 @handler.add(PostbackEvent)
@@ -211,70 +125,26 @@ def handle_postback(event):
     user_id, reply_token, user_name = get_user_data(event)
     data = urllib.parse.parse_qs(event.postback.data)
     action = data["action"][0]
-    global pre_action
 
     if (action == "yes_first"):
-        # 確実に日本時間での時間を取得する
-        initial_day = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-        limit = initial_day + datetime.timedelta(days=90)
-        date_picker = TemplateSendMessage(
-            alt_text="終了予定日を設定",
-            template=ButtonsTemplate(
-                title="終了予定日",
-                text="終了予定日を設定します。",
-                actions=[
-                    DatetimePickerTemplateAction(
-                        label="日付を選択",
-                        data="action=set_end_day",
-                        mode="date",
-                        initial=get_date(
-                            initial_day+datetime.timedelta(days=30)
-                            ),
-                        min=get_date(initial_day),
-                        max=get_date(limit)
-                    )
-                ])
-        )
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(text="期限を選択してください。(最大90日先まで選択可能)"),
-                date_picker
-            ]
-        )
+        # 利用開始時の処理
+        # 日付選択オブジェクトを送って終了
+        mt.set_duration_message(line_bot_api, reply_token)
+        db_editor.add_user(user_id)
     elif (action == "set_end_day"):
+        # 日付選択オブジェクト操作後の処理
+        initial_date = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+        initial_date = get_date(initial_date)
         end_date = event.postback.params['date']
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="期限を{}に設定しました。\n最終目標を設定します。最終目標をメッセージで送信してください。(整数で送信してください。)".format(end_date)
-                )]
-        )
-        pre_action = action
-    elif (action == "nortification"):
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="通知設定をオンにしました。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
-                )
-            ]
-        )
-    elif (action == "no_nortification"):
-        line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="通知設定はオフです。\n「進捗状況」とメッセージを送信することでグラフはいつでも受信可能です。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
-                )
-            ]
-        )
+        mt.set_target_message(line_bot_api, reply_token, end_date)
+        # dbに開始日と終了日を追加
+        db_editor.set_date(user_id, initial_date, end_date)
+    elif (action == "notification"):
+        mt.notification_on_message(line_bot_api, reply_token)
+    elif (action == "no_notification"):
+        mt.notification_off_message(line_bot_api, reply_token)
     else:
-        line_bot_api.reply_message(
-            reply_token,
-            TextSendMessage(text="設定を中止します。")
-        )
+        mt.stop_setting_message(line_bot_api, reply_token)
 
 
 if __name__ == "__main__":
