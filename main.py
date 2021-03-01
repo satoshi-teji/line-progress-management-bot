@@ -92,7 +92,7 @@ def handle_message(event):
             return
         num = float(nums[0])
         db_editor.set_per_day_target(user_id, num)
-        _, _, initial_date, end_date, target, per_day_target = db_editor.get_data(user_id)
+        _, _, initial_date, end_date, target, per_day_target, _ = db_editor.get_data(user_id)
         mt.set_notification_message(line_bot_api, reply_token, num,
                                     initial_date, end_date, target,
                                     per_day_target)
