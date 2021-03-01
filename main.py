@@ -103,6 +103,14 @@ def handle_message(event):
         db_editor.del_user(user_id)
         return
 
+    if ("設定" in user_msg):
+        _, _, initial_date, end_date, target, per_day_target, _ = db_editor.get_data(user_id)
+        mt.set_notification_message(line_bot_api, reply_token, num,
+                                    initial_date, end_date, target,
+                                    per_day_target)
+        mt.setting_message(line_bot_api, reply_token)
+    mt.help_message(line_bot_api, reply_token)
+
 
 # 友達追加時のイベント
 @handler.add(FollowEvent)
