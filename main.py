@@ -105,10 +105,8 @@ def handle_message(event):
 
     if ("設定" in user_msg):
         _, _, initial_date, end_date, target, per_day_target, _ = db_editor.get_data(user_id)
-        mt.set_notification_message(line_bot_api, reply_token, num,
-                                    initial_date, end_date, target,
-                                    per_day_target)
-        mt.setting_message(line_bot_api, reply_token)
+        mt.setting_message(line_bot_api, reply_token, initial_date, end_date, target, per_day_target)
+
     mt.help_message(line_bot_api, reply_token)
 
 
