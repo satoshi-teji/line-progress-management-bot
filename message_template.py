@@ -221,11 +221,11 @@ def update_success_message(line_bot_api, reply_token, url):
             reply_token,
             [
                 TextSendMessage(
-                    text="今日の進捗を更新しました".format(end_date)
+                    text="今日の進捗を更新しました"
                 ),
                 ImageSendMessage(
                     original_content_url=url[0],
-                    preview_image_url=url[1],
+                    preview_image_url=url[1]
                 )
-                )]
+                ]
     )
