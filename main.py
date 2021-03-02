@@ -77,7 +77,7 @@ def calc_days(initial_date, end_date):
     init = list(map(int, initial_date.split('-')))
     end = list(map(int, end_date.split('-')))
     days = datetime.date(end[0], end[1], end[2]) - datetime.date(init[0], init[1], init[2])
-    return days.days
+    return days.days + 1
 
 
 @app.route("/callback", methods=["POST"])
