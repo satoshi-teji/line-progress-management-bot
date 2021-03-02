@@ -132,6 +132,7 @@ class Editor():
             cum[0] = num_work
         else:
             cum[index] = cum[index - 1] + num_work
+        cum[index:] = [cum[index]]*(len(cum) - index)
         str_day_work = ','.join(map(str, day_work))
         str_cum = ','.join(map(str, cum))
         cur.execute('UPDATE {} SET day_work="{}" WHERE user_id="{}"'.format(self.work_table, str_day_work, user_id))
