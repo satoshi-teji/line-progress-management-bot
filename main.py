@@ -16,11 +16,14 @@ from linebot.models import (
     TextMessage
 )
 
-import message_template as mt
+import numpy as np
+import plotly.graph_objects as go
 import re
 import os
 import urllib.parse
 import datetime
+
+import message_template as mt
 import edit_db as ed
 
 
@@ -28,11 +31,35 @@ app = Flask(__name__)
 
 CHANNEL_ACCESS_TOKEN = os.environ["CHANNEL_ACCESS_TOKEN"]
 CHANNEL_SECRET = os.environ["CHANNEL_SECRET"]
+URL = os.environ["URL"]
 
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
-dbname = 'db/user_data.db'
-db_editor = ed.Editor(dbname)
+dbname = os.environ['DB_NAME']
+data_table_name = os.environ['DATA_TABLE']
+work_table_name = os.environ['WORK_TABLE']
+db_editor = ed.Editor(dbname, data_table_name)
+
+
+def make_graph(initial_date, end_date, cum, target):
+    days = calc_days(initial_date, end_date)
+    list_init = list(map(int, initial_date.split('-')))
+    beg = datetime.date(list_init[0], list_init[1], list_init[2])
+    time = [beg + datetime.timedelta(days=x) for x in range(days)]
+    fig = go.Figure(data=[
+        go.Scatter(x=time, y=cum, name='Total'),
+        go.Scatter(x=time, y=target, name='Target')
+        ])
+    fig.update_layout(showlegend=True)
+    fig.update_layout(width=1024, height=512)
+    return fig
+
+
+def create_png(graph, user_id):
+    url = (URL + "images/{}.png".format(user_id), URL + "images/thumb_{}.png".format(user_id))
+    graph.write_image("images/{}.png".format(user_id), width=1024)
+    graph.write_image("images/thumb_{}.png".format(user_id), width=256)
+    return url
 
 
 def get_date(datetime_data):
@@ -44,6 +71,13 @@ def get_user_data(event):
     return (event.source.user_id,
             event.reply_token,
             line_bot_api.get_profile(event.source.user_id).display_name)
+
+
+def calc_days(initial_date, end_date):
+    init = list(map(int, initial_date.split('-')))
+    end = list(map(int, end_date.split('-')))
+    days = datetime.date(end[0], end[1], end[2]) - datetime.date(init[0], init[1], init[2])
+    return days
 
 
 @app.route("/callback", methods=["POST"])
@@ -66,6 +100,7 @@ def handle_message(event):
     user_id, reply_token, user_name = get_user_data(event)
     user_msg = event.message.text
 
+    # dbにユーザーが登録されているかどうか
     if (not db_editor.check_user(user_id)):
         if ("利用" in user_msg and "開始" in user_msg):
             mt.start_message(line_bot_api, reply_token, user_name)
@@ -74,6 +109,12 @@ def handle_message(event):
             mt.invalid_message(line_bot_api, reply_token)
             return
 
+    # dateが設定されているかどうか
+    if (not db_editor.check_date(user_id)):
+        mt.set_duration_message(line_bot_api, reply_token)
+        db_editor.add_user(user_id)
+        return
+
     if (not db_editor.check_target(user_id)):
         # DBに最終目標がない
         nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
@@ -81,21 +122,15 @@ def handle_message(event):
             mt.num_error_message(line_bot_api, reply_token)
             return
         num = float(nums[0])
-        mt.set_per_day_target_message(line_bot_api, reply_token, num)
+        _, _, initial_date, end_date, target, _ = db_editor.get_data(user_id)
+        days = calc_days(initial_date, end_date)
+        per_day_target = num / days
+        mt.set_notification_message(line_bot_api, reply_token, initial_date, end_date, target, per_day_target)
         db_editor.set_target(user_id, num)
-        return
-    elif (not db_editor.check_per_day_target(user_id)):
-        # DBに一日あたりの目標がない
-        nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
-        if (len(nums) == 0):
-            mt.num_error_message(line_bot_api, reply_token)
-            return
-        num = float(nums[0])
-        db_editor.set_per_day_target(user_id, num)
-        _, _, initial_date, end_date, target, per_day_target, _ = db_editor.get_data(user_id)
-        mt.set_notification_message(line_bot_api, reply_token, num,
-                                    initial_date, end_date, target,
-                                    per_day_target)
+        cum_to_target = np.linspace(0, target, days)
+        cum_to_target = ','.join(map(str, cum_to_target))
+        db_editor.set_work_target(user_id, cum_to_target)
+        db_editor.set_work(user_id, days)
         return
 
     if ("利用" in user_msg and "中止" in user_msg):
@@ -103,9 +138,32 @@ def handle_message(event):
         db_editor.del_user(user_id)
         return
 
+    if ("進捗" in user_msg):
+        nums = re.findall(r"[-+]?\d*\.\d+|\d+", user_msg)
+        if (len(nums) != 0):
+            _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
+            now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+            today = datetime.date(now.year, now.month, now.day)
+            index = calc_days(str(today), initial_date) - 1
+            db_editor.update(user_id, nums[0], index)
+            # 一緒にグラフデータも送る
+            target = db_editor.get_work_target(user_id)
+            cum = db_editor.get_work_target(user_id)
+            fig = make_graph(initial_date, end_date, cum, target)
+            url = create_png(fig, user_id)
+            mt.update_success_message(line_bot_api, reply_token, url)
+            return
+
     if ("設定" in user_msg):
-        _, _, initial_date, end_date, target, per_day_target, _ = db_editor.get_data(user_id)
-        mt.setting_message(line_bot_api, reply_token, initial_date, end_date, target, per_day_target)
+        _, _, initial_date, end_date, target, on_off = db_editor.get_data(user_id)
+        days = calc_days(initial_date, end_date)
+        per_day_target = target / days
+        if on_off:
+            on_off = 'オン'
+        else:
+            on_off = 'オフ'
+        mt.setting_message(line_bot_api, reply_token, initial_date, end_date, target, per_day_target, on_off)
+        return
 
     mt.help_message(line_bot_api, reply_token)
 
@@ -120,10 +178,12 @@ def handle_follow_message(event):
     mt.start_message(line_bot_api, reply_token, user_name)
 
 
+# ブロック時のイベント
 @handler.add(UnfollowEvent)
 def handle_unfollow_message(event):
     user_id = event.source.user_id
     db_editor.del_user(user_id)
+
 
 # POSTBACK時のイベント
 @handler.add(PostbackEvent)
@@ -135,19 +195,30 @@ def handle_postback(event):
     if (action == "yes_first"):
         # 利用開始時の処理
         # 日付選択オブジェクトを送って終了
-        mt.set_duration_message(line_bot_api, reply_token)
-        db_editor.add_user(user_id)
+        if (not db_editor.check_user(user_id)):
+            mt.set_duration_message(line_bot_api, reply_token)
+            db_editor.add_user(user_id)
+        else:
+            mt.help_message(line_bot_api, reply_token)
+            return
     elif (action == "set_end_day"):
         # 日付選択オブジェクト操作後の処理
-        initial_date = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-        initial_date = get_date(initial_date)
-        end_date = event.postback.params['date']
-        mt.set_target_message(line_bot_api, reply_token, end_date)
-        # dbに開始日と終了日を追加
-        db_editor.set_date(user_id, initial_date, end_date)
+        if (not db_editor.check_date(user_id)):
+            initial_date = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+            initial_date = get_date(initial_date)
+            end_date = event.postback.params['date']
+            mt.set_target_message(line_bot_api, reply_token, end_date)
+            # dbに開始日と終了日を追加
+            db_editor.set_date(user_id, initial_date, end_date)
+            return
+        else:
+            mt.help_message(line_bot_api, reply_token)
+            return
     elif (action == "notification"):
+        db_editor.set_notification(user_id)
         mt.notification_on_message(line_bot_api, reply_token)
     elif (action == "no_notification"):
+        db_editor.unset_notification(user_id)
         mt.notification_off_message(line_bot_api, reply_token)
     else:
         mt.stop_setting_message(line_bot_api, reply_token)
