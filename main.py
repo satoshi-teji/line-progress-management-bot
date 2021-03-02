@@ -27,7 +27,7 @@ import message_template as mt
 import edit_db as ed
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='images')
 
 CHANNEL_ACCESS_TOKEN = os.environ["CHANNEL_ACCESS_TOKEN"]
 CHANNEL_SECRET = os.environ["CHANNEL_SECRET"]
