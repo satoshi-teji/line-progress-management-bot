@@ -151,7 +151,10 @@ def notification_on_message(line_bot_api, reply_token, url):
                 ),
                 ImageSendMessage(
                     original_content_url=url[0],
-                    preview_image_url=url[1]
+                    preview_image_url=url[0]
+                ),
+                TextSendMessage(
+                    text="青色の線が赤色の線に近づくように頑張りましょう！！"
                 )
             ]
     )
@@ -166,7 +169,10 @@ def notification_off_message(line_bot_api, reply_token, url):
                 ),
                 ImageSendMessage(
                     original_content_url=url[0],
-                    preview_image_url=url[1]
+                    preview_image_url=url[0]
+                ),
+                TextSendMessage(
+                    text="青色の線が赤色の線に近づくように頑張りましょう！！"
                 )
             ]
     )
