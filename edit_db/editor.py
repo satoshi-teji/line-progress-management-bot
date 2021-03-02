@@ -57,7 +57,7 @@ class Editor():
         cur.close()
         conn.commit()
         conn.close()
-        if (is_in == ('None', 'None')):
+        if (is_in == (None, None)):
             return False
         return True
 
