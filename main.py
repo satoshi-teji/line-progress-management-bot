@@ -38,7 +38,7 @@ handler = WebhookHandler(CHANNEL_SECRET)
 dbname = os.environ['DB_NAME']
 data_table_name = os.environ['DATA_TABLE']
 work_table_name = os.environ['WORK_TABLE']
-db_editor = ed.Editor(dbname, data_table_name)
+db_editor = ed.Editor(dbname, data_table_name, work_table_name)
 
 
 def make_graph(initial_date, end_date, cum, target):
