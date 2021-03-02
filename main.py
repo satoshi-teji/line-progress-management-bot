@@ -198,6 +198,7 @@ def handle_postback(event):
         if (not db_editor.check_user(user_id)):
             mt.set_duration_message(line_bot_api, reply_token)
             db_editor.add_user(user_id)
+            return
         else:
             mt.help_message(line_bot_api, reply_token)
             return
