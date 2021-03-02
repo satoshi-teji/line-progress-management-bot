@@ -94,14 +94,14 @@ def setting_message(
         initial_date,
         end_date,
         target,
-        per_day):
+        per_day,
+        on_off):
     line_bot_api.reply_message(
             reply_token,
             [
                 TextSendMessage(
-                    text="設定はこのようになっています。\n\
-                        期間: {} ~ {}\n最終目標: {}\n一日あたり: {}".format(
-                        initial_date, end_date, target, per_day))
+                    text="設定はこのようになっています。\n期間: {} ~ {}\n最終目標: {}\n一日あたり: {}\n通知 {}".format(
+                        initial_date, end_date, target, per_day, on_off))
             ]
     )
     return
@@ -110,7 +110,6 @@ def setting_message(
 def set_notification_message(
         line_bot_api,
         reply_token,
-        num,
         initial_date,
         end_date,
         target,
@@ -118,9 +117,6 @@ def set_notification_message(
     line_bot_api.reply_message(
             reply_token,
             [
-                TextSendMessage(
-                    text="一日あたりの目標を {}に設定しました。\n以下の設定で利用を開始します。".format(num)
-                ),
                 TextSendMessage(
                     text="期間: {} ~ {}\n最終目標: {}\n一日あたり: {}".format(
                         initial_date, end_date, target, per_day)
@@ -210,22 +206,26 @@ def num_error_message(line_bot_api, reply_token):
     return
 
 
-def set_per_day_target_message(line_bot_api, reply_token, num):
-    line_bot_api.reply_message(
-            reply_token,
-            [
-                TextSendMessage(
-                    text="最終目標を {}に設定しました。\n一日あたりの目標を設定します。一日あたりの目標をメッセージで送信してください。\n自動で設定したい場合は0を送信してください。".format(num)
-                )]
-    )
-    return
-
-
 def set_target_message(line_bot_api, reply_token, end_date):
     line_bot_api.reply_message(
             reply_token,
             [
                 TextSendMessage(
                     text="期限を{}に設定しました。\n最終目標を設定します。最終目標をメッセージで送信してください。(整数で送信してください。)".format(end_date)
+                )]
+    )
+
+
+def update_success_message(line_bot_api, reply_token, url):
+    line_bot_api.reply_message(
+            reply_token,
+            [
+                TextSendMessage(
+                    text="今日の進捗を更新しました".format(end_date)
+                ),
+                ImageSendMessage(
+                    original_content_url=url[0],
+                    preview_image_url=url[1],
+                )
                 )]
     )
