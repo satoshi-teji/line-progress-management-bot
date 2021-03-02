@@ -142,23 +142,31 @@ def set_notification_message(
     return
 
 
-def notification_on_message(line_bot_api, reply_token):
+def notification_on_message(line_bot_api, reply_token, url):
     line_bot_api.reply_message(
             reply_token,
             [
                 TextSendMessage(
                     text="通知設定をオンにしました。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
+                ),
+                ImageSendMessage(
+                    original_content_url=url[0],
+                    preview_image_url=url[1]
                 )
             ]
     )
 
 
-def notification_off_message(line_bot_api, reply_token):
+def notification_off_message(line_bot_api, reply_token, url):
     line_bot_api.reply_message(
             reply_token,
             [
                 TextSendMessage(
-                    text="通知設定はオフです。\n「進捗状況」とメッセージを送信することでグラフはいつでも受信可能です。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
+                    text="通知設定をオフにしました。\nこれで設定は完了です。\n「進捗 3ページ」のようにメッセージを送信することでその日の進捗を更新できます。"
+                ),
+                ImageSendMessage(
+                    original_content_url=url[0],
+                    preview_image_url=url[1]
                 )
             ]
     )

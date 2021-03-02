@@ -58,7 +58,7 @@ def make_graph(initial_date, end_date, cum, target):
 def create_png(graph, user_id):
     url = (URL + "images/{}.png".format(user_id), URL + "images/thumb_{}.png".format(user_id))
     graph.write_image("images/{}.png".format(user_id), width=1024)
-    graph.write_image("images/thumb_{}.png".format(user_id), width=256)
+    graph.write_image("images/thumb_{}.png".format(user_id), width=256, height=256)
     return url
 
 
@@ -217,10 +217,20 @@ def handle_postback(event):
             return
     elif (action == "notification"):
         db_editor.set_notification(user_id)
-        mt.notification_on_message(line_bot_api, reply_token)
+        _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
+        target = db_editor.get_work_target(user_id)
+        cum = db_editor.get_work_cumulative(user_id)
+        fig = make_graph(initial_date, end_date, cum, target)
+        url = create_png(fig, user_id)
+        mt.notification_on_message(line_bot_api, reply_token, url)
     elif (action == "no_notification"):
         db_editor.unset_notification(user_id)
-        mt.notification_off_message(line_bot_api, reply_token)
+        _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
+        target = db_editor.get_work_target(user_id)
+        cum = db_editor.get_work_cumulative(user_id)
+        fig = make_graph(initial_date, end_date, cum, target)
+        url = create_png(fig, user_id)
+        mt.notification_off_message(line_bot_api, reply_token, url)
     else:
         mt.stop_setting_message(line_bot_api, reply_token)
 
