@@ -148,7 +148,7 @@ def handle_message(event):
             db_editor.update(user_id, float(nums[0]), index)
             # 一緒にグラフデータも送る
             target = db_editor.get_work_target(user_id)
-            cum = db_editor.get_work_target(user_id)
+            cum = db_editor.get_work_cumulative(user_id)
             fig = make_graph(initial_date, end_date, cum, target)
             url = create_png(fig, user_id)
             mt.update_success_message(line_bot_api, reply_token, url)
