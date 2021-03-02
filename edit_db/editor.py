@@ -123,7 +123,7 @@ class Editor():
     def update(self, user_id, num_work, index):
         conn = sqlite3.connect(self.dbname)
         cur = conn.cursor()
-        cur.execute('SELECT day_work, cumulative FROM {} WHERE user_id={}'.format(self.work_table, user_id))
+        cur.execute('SELECT day_work, cumulative FROM {} WHERE user_id="{}"'.format(self.work_table, user_id))
         data = cur.fetchone()
         day_work = list(map(float, data[0].split(',')))
         day_work[index] = num_work
