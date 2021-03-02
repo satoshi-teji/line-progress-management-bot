@@ -145,7 +145,7 @@ def handle_message(event):
             now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
             today = datetime.date(now.year, now.month, now.day)
             index = calc_days(str(today), initial_date) - 1
-            db_editor.update(user_id, nums[0], index)
+            db_editor.update(user_id, float(nums[0]), index)
             # 一緒にグラフデータも送る
             target = db_editor.get_work_target(user_id)
             cum = db_editor.get_work_target(user_id)
