@@ -222,6 +222,7 @@ def handle_postback(event):
         fig = make_graph(initial_date, end_date, cum, target)
         url = create_png(fig, user_id)
         mt.notification_on_message(line_bot_api, reply_token, url)
+        return
     elif (action == "no_notification"):
         db_editor.unset_notification(user_id)
         _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
@@ -230,8 +231,12 @@ def handle_postback(event):
         fig = make_graph(initial_date, end_date, cum, target)
         url = create_png(fig, user_id)
         mt.notification_off_message(line_bot_api, reply_token, url)
+        return
     else:
         mt.stop_setting_message(line_bot_api, reply_token)
+        if (db_editor.check_user(user_id)):
+            db_editor.del_user(user_id)
+        return
 
 
 if __name__ == "__main__":
