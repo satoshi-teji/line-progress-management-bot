@@ -56,9 +56,8 @@ def make_graph(initial_date, end_date, cum, target):
 
 
 def create_png(graph, user_id):
-    url = (URL + "images/{}.png".format(user_id), URL + "images/thumb_{}.png".format(user_id))
+    url = URL + "images/{}.png".format(user_id)
     graph.write_image("images/{}.png".format(user_id), width=1024)
-    graph.write_image("images/thumb_{}.png".format(user_id), width=256, height=256)
     return url
 
 
