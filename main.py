@@ -108,7 +108,6 @@ def handle_message(event):
     # dateが設定されているかどうか
     if (not db_editor.check_date(user_id)):
         mt.set_duration_message(line_bot_api, reply_token)
-        db_editor.add_user(user_id)
         return
 
     if (not db_editor.check_target(user_id)):
