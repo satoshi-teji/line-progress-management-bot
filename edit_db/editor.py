@@ -65,7 +65,7 @@ class Editor():
     def check_user(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT * FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute('SELECT EXISTS (SELECT * FROM {} WHERE user_id="{}")'.format(self.data_table, user_id))
         is_in = cur.fetchone()
         cur.close()
         conn.commit()
