@@ -95,6 +95,7 @@ class Editor():
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
         cur.execute("DELETE FROM {} WHERE user_id='{}'".format(self.data_table, user_id))
+        cur.execute("DELETE FROM {} WHERE user_id='{}'".format(self.work_table, user_id))
         cur.close()
         conn.commit()
         conn.close()
