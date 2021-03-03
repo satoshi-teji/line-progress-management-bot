@@ -65,14 +65,15 @@ class Editor():
     def check_user(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT EXISTS (SELECT * FROM {} WHERE user_id="{}")'.format(self.data_table, user_id))
-        is_in = cur.fetchone()
+        is_in = True
+        try:
+            cur.execute('SELECT * FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
+        except psycopg2.errors.UndefinedColumn:
+            is_in = False
         cur.close()
         conn.commit()
         conn.close()
-        if (is_in is None):
-            return False
-        return True
+        return is_in
 
     def check_target(self, user_id):
         conn = psycopg2.connect(self.db_url)
