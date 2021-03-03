@@ -40,9 +40,7 @@ db_editor = ed.Editor()
 
 def make_graph(initial_date, end_date, cum, target):
     days = calc_days(initial_date, end_date)
-    list_init = list(map(int, initial_date.split('-')))
-    beg = datetime.date(list_init[0], list_init[1], list_init[2])
-    time = [beg + datetime.timedelta(days=x) for x in range(days)]
+    time = [initial_date + datetime.timedelta(days=x) for x in range(days)]
     fig = go.Figure(data=[
         go.Scatter(x=time, y=cum, name='Total'),
         go.Scatter(x=time, y=target, name='Target')
@@ -155,7 +153,7 @@ def handle_message(event):
             on_off = 'オン'
         else:
             on_off = 'オフ'
-        mt.setting_message(line_bot_api, reply_token, initial_date, end_date, target, per_day_target, on_off)
+        mt.setting_message(line_bot_api, reply_token, initial_date.date(), end_date.date(), target, per_day_target, on_off)
         return
 
     mt.help_message(line_bot_api, reply_token)
