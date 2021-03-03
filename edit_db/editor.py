@@ -11,8 +11,9 @@ class Editor():
     def add_user(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('INSERT INTO {}(user_id) values("{}")'.format(self.data_table, user_id))
-        cur.execute('INSERT INTO {}(user_id) values("{}")'.format(self.work_table, user_id))
+        cur.execute("INSERT INTO {} (user_id) VALUES('{}')".format(self.data_table, user_id))
+        cur.execute("INSERT INTO {} (user_id) VALUES('{}')".format(self.work_table, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -20,8 +21,9 @@ class Editor():
     def set_date(self, user_id, initial_date, end_date):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('UPDATE {} SET initial_date=date("{}") WHERE user_id="{}"'.format(self.data_table, initial_date, user_id))
-        cur.execute('UPDATE {} SET end_date=date("{}") WHERE user_id="{}"'.format(self.data_table, end_date, user_id))
+        cur.execute("UPDATE {} SET initial_date=date('{}') WHERE user_id='{}'".format(self.data_table, initial_date, user_id))
+        cur.execute("UPDATE {} SET end_date=date('{}') WHERE user_id='{}'".format(self.data_table, end_date, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -29,7 +31,8 @@ class Editor():
     def set_target(self, user_id, num):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('UPDATE {} SET target={} WHERE user_id="{}"'.format(self.data_table, num, user_id))
+        cur.execute("UPDATE {} SET target={} WHERE user_id='{}'".format(self.data_table, num, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -37,7 +40,8 @@ class Editor():
     def set_notification(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('UPDATE {} SET notification=TRUE WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute("UPDATE {} SET notification=TRUE WHERE user_id='{}'".format(self.data_table, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -45,7 +49,8 @@ class Editor():
     def unset_notification(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('UPDATE {} SET notification=FALSE WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute("UPDATE {} SET notification=FALSE WHERE user_id='{}'".format(self.data_table, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -53,7 +58,7 @@ class Editor():
     def check_date(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT initial_date, end_date FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute("SELECT initial_date, end_date FROM {} WHERE user_id='{}'".format(self.data_table, user_id))
         is_in = cur.fetchone()
         cur.close()
         conn.commit()
@@ -65,20 +70,19 @@ class Editor():
     def check_user(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        is_in = True
-        try:
-            cur.execute('SELECT * FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
-        except psycopg2.errors.UndefinedColumn:
-            is_in = False
+        cur.execute("SELECT * FROM {} WHERE user_id='{}'".format(self.data_table, user_id))
+        is_in = cur.fetchone()
         cur.close()
         conn.commit()
         conn.close()
-        return is_in
+        if (is_in is None):
+            return False
+        return True
 
     def check_target(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT target FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute("SELECT target FROM {} WHERE user_id='{}'".format(self.data_table, user_id))
         is_in = cur.fetchone()[0]
         cur.close()
         conn.commit()
@@ -90,7 +94,8 @@ class Editor():
     def del_user(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('DELETE FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute("DELETE FROM {} WHERE user_id='{}'".format(self.data_table, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -98,8 +103,9 @@ class Editor():
     def get_data(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT * FROM {} WHERE user_id="{}"'.format(self.data_table, user_id))
+        cur.execute("SELECT * FROM {} WHERE user_id='{}'".format(self.data_table, user_id))
         data = cur.fetchone()
+        cur.close()
         conn.commit()
         conn.close()
         return data
@@ -107,7 +113,8 @@ class Editor():
     def set_work_target(self, user_id, cum):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('UPDATE {} SET target="{}" WHERE user_id="{}"'.format(self.work_table, cum, user_id))
+        cur.execute("UPDATE {} SET target='{}' WHERE user_id='{}'".format(self.work_table, cum, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -116,8 +123,9 @@ class Editor():
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
         default = ','.join(map(str, [0]*days))
-        cur.execute('UPDATE {} SET day_work="{}" WHERE user_id="{}"'.format(self.work_table, default, user_id))
-        cur.execute('UPDATE {} SET cumulative="{}" WHERE user_id="{}"'.format(self.work_table, default, user_id))
+        cur.execute("UPDATE {} SET day_work='{}' WHERE user_id='{}'".format(self.work_table, default, user_id))
+        cur.execute("UPDATE {} SET cumulative='{}' WHERE user_id='{}'".format(self.work_table, default, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return
@@ -125,7 +133,7 @@ class Editor():
     def update(self, user_id, num_work, index):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT day_work, cumulative FROM {} WHERE user_id="{}"'.format(self.work_table, user_id))
+        cur.execute("SELECT day_work, cumulative FROM {} WHERE user_id='{}'".format(self.work_table, user_id))
         data = cur.fetchone()
         day_work = list(map(float, data[0].split(',')))
         day_work[index] = num_work
@@ -137,8 +145,9 @@ class Editor():
         cum[index:] = [cum[index]]*(len(cum) - index)
         str_day_work = ','.join(map(str, day_work))
         str_cum = ','.join(map(str, cum))
-        cur.execute('UPDATE {} SET day_work="{}" WHERE user_id="{}"'.format(self.work_table, str_day_work, user_id))
-        cur.execute('UPDATE {} SET cumulative="{}" WHERE user_id="{}"'.format(self.work_table, str_cum, user_id))
+        cur.execute("UPDATE {} SET day_work='{}' WHERE user_id='{}'".format(self.work_table, str_day_work, user_id))
+        cur.execute("UPDATE {} SET cumulative='{}' WHERE user_id='{}'".format(self.work_table, str_cum, user_id))
+        cur.close()
         conn.commit()
         conn.close()
         return day_work, cum
@@ -146,8 +155,9 @@ class Editor():
     def get_work_target(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT target FROM {} WHERE user_id="{}"'.format(self.work_table, user_id))
+        cur.execute("SELECT target FROM {} WHERE user_id='{}'".format(self.work_table, user_id))
         data = cur.fetchone()
+        cur.close()
         conn.commit()
         conn.close()
         return list(map(float, data[0].split(',')))
@@ -155,8 +165,9 @@ class Editor():
     def get_work_cumulative(self, user_id):
         conn = psycopg2.connect(self.db_url)
         cur = conn.cursor()
-        cur.execute('SELECT cumulative FROM {} WHERE user_id="{}"'.format(self.work_table, user_id))
+        cur.execute("SELECT cumulative FROM {} WHERE user_id='{}'".format(self.work_table, user_id))
         data = cur.fetchone()
+        cur.close()
         conn.commit()
         conn.close()
         return list(map(float, data[0].split(',')))
