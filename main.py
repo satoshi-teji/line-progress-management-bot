@@ -116,7 +116,7 @@ def handle_message(event):
         _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
         days = calc_days(initial_date, end_date)
         per_day_target = num / days
-        mt.set_notification_message(line_bot_api, reply_token, initial_date, end_date, num, per_day_target)
+        mt.set_notification_message(line_bot_api, reply_token, initial_date.date(), end_date.date(), num, per_day_target)
         db_editor.set_target(user_id, num)
         cum_to_target = np.linspace(0, num, days)
         cum_to_target = ','.join(map(str, cum_to_target))
