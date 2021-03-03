@@ -70,9 +70,7 @@ def get_user_data(event):
 
 
 def calc_days(initial_date, end_date):
-    init = list(map(int, initial_date.split('-')))
-    end = list(map(int, end_date.split('-')))
-    days = datetime.date(end[0], end[1], end[2]) - datetime.date(init[0], init[1], init[2])
+    days = initial_date - end_date
     return days.days + 1
 
 
@@ -139,7 +137,7 @@ def handle_message(event):
             _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
             now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
             today = datetime.date(now.year, now.month, now.day)
-            index = calc_days(str(today), initial_date) - 1
+            index = calc_days(today, initial_date) - 1
             db_editor.update(user_id, float(nums[0]), index)
             # 一緒にグラフデータも送る
             target = db_editor.get_work_target(user_id)
