@@ -70,8 +70,8 @@ def get_user_data(event):
 
 
 def calc_days(initial_date, end_date):
-    days = initial_date - end_date
-    return days.days + 1
+    days = end_date - initial_date
+    return abs(days.days + 1)
 
 
 @app.route("/callback", methods=["POST"])
