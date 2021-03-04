@@ -1,6 +1,6 @@
 # LINE 進捗管理くん のソースコード
 友達追加用QRコード
-![QRコード](doc/images/QR.PNG)
+![QRコード](https://raw.githubusercontent.com/satoshi-teji/line-progress-management-bot/main/doc/images/QR.png)
 ***
 ## 機能
 期間、目標設定を行うと1日当たりに産むべき進捗を計算する。\
