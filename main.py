@@ -69,7 +69,7 @@ def get_user_data(event):
 
 def calc_days(initial_date, end_date):
     days = end_date - initial_date
-    return abs(days.days + 1)
+    return abs(days.days) + 1
 
 
 @app.route("/callback", methods=["POST"])
@@ -135,7 +135,7 @@ def handle_message(event):
             _, _, initial_date, end_date, _, _ = db_editor.get_data(user_id)
             now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
             today = datetime.date(now.year, now.month, now.day)
-            index = calc_days(today, initial_date.date()) - 1
+            index = calc_days(initial_date.date(), today) - 1
             db_editor.update(user_id, float(nums[0]), index)
             # 一緒にグラフデータも送る
             target = db_editor.get_work_target(user_id)
